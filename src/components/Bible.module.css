@@ -9,6 +9,7 @@
   font-family: sans-serif;
 }
 
+
 .bibleSelector {
   display: flex;
   justify-content: center;
@@ -39,6 +40,11 @@
   background-color: var(--color-primary);
   box-shadow: 1px 2px 5px 2px rgba(58, 44, 13, 0.65);
 
+}
+
+.cardContainer {
+  position: relative;
+  width: 350px;
 }
 
 .bibleCard {
@@ -74,7 +80,7 @@
   align-items: center;
   justify-content: center;
   position: absolute;
-  top: -0.6rem;
+  top: 0.5rem;
   transition: background 0.3s;
 }
 .iconBtn:hover {
@@ -83,15 +89,11 @@
 }
 
 .iconBtnRight8 {
-  right: 0;
+  right: 10px;
 }
 
 .iconBtnRight16 {
-  right: 35px;
-}
-
-.iconBtnHover {
-  background-color: var(--color-secondary);
+  right: 45px;
 }
 
 .cardBody {

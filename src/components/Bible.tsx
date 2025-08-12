@@ -1,7 +1,8 @@
 import styles from "./Bible.module.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEnglishTts } from "../service/tts.tsx";
 import { ShareIcon, ReadIcon } from "./icons";
+import html2canvas from "html2canvas";
 
 interface RandomVerse {
   book: string;
@@ -17,6 +18,7 @@ const Bible = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const testaments: Array<"OT" | "NT"> = ["OT", "NT"];
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   async function getRandomVerse(selectedTestament: "OT" | "NT") {
     setLoading(true);
@@ -56,6 +58,33 @@ const Bible = () => {
     getRandomVerse(testament);
   }, [testament]);
 
+  const handleShare = async () => {
+    if (!navigator.clipboard || !window.ClipboardItem) {
+      alert("This browser does not support image copying to clipboard.");
+      return;
+    }
+
+    if (!cardRef.current) return;
+    const canvas = await html2canvas(cardRef.current, { scale: 2 });
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        alert("❌ Failed to generate image blob.");
+        return;
+      }
+      try {
+        const item = new ClipboardItem({ "image/png": blob });
+        await navigator.clipboard.write([item]);
+        alert(
+          "✅ Image copied to clipboard!\nTry pasting it into KakaoTalk or any messenger using Ctrl+V.",
+        );
+      } catch (err) {
+        alert("❌ Failed to copy image to clipboard.");
+        console.error(err);
+      }
+    });
+  };
+
   return (
     <div className={styles.bibleContainer}>
       <div className={styles.bibleSelector}>
@@ -69,30 +98,30 @@ const Bible = () => {
           </button>
         ))}
       </div>
-
-      <div className={styles.bibleCard}>
+      <div className={styles.cardContainer}>
+        <button
+          onClick={() => handleShare()}
+          className={`${styles.iconBtn} ${styles.iconBtnRight8}`}
+          aria-label="share button"
+        >
+          <ShareIcon />
+        </button>
+        <button
+          className={`${styles.iconBtn} ${styles.iconBtnRight16}`}
+          onClick={() => readOut(data!.text)}
+          disabled={loading || !data?.text}
+          aria-label="read button"
+        >
+          <ReadIcon />
+        </button>
+      </div>
+      <div className={styles.bibleCard} ref={cardRef}>
         <div className={styles.cardHeader}>
           {loading ? (
             <h3>Loading...</h3>
           ) : (
             data && <h3>{`${data.book} ${data.chapter}:${data.verse}`}</h3>
           )}
-          <div className={styles.cardActions}>
-            <button
-              className={`${styles.iconBtn} ${styles.iconBtnRight8}`}
-              aria-label="share button"
-            >
-              <ShareIcon />
-            </button>
-            <button
-              className={`${styles.iconBtn} ${styles.iconBtnRight16}`}
-              onClick={() => readOut(data!.text)}
-              disabled={loading || !data?.text}
-              aria-label="read button"
-            >
-              <ReadIcon />
-            </button>
-          </div>
         </div>
         <div className={styles.cardBody}>
           {loading ? <p>Loading verse...</p> : data && <p>{data.text}</p>}
