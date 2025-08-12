@@ -1,0 +1,22 @@
+html,
+body {
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --color-background:#fffffe;
+  --color-paragraph: #716040;
+  --color-primary: #8c7851;
+  --color-primary-light: #aa8f5f;
+  --color-primary-dark: #6c5c3a;
+  --color-secondary: #eaddcf;
+  --color-secondary-dark: #d8c5b5;
+  --color-text: #fffffe;
+  --color-red:#f25042;
+  --color-black:#020826;
+}
