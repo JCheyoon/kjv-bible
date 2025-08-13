@@ -1,5 +1,5 @@
 import styles from "./Bible.module.css";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useEnglishTts } from "../service/tts.tsx";
 import { ShareIcon, ReadIcon } from "./icons";
 import html2canvas from "html2canvas";
@@ -20,9 +20,8 @@ const Bible = () => {
   const testaments: Array<"OT" | "NT"> = ["OT", "NT"];
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  async function getRandomVerse(selectedTestament: "OT" | "NT") {
+  const getRandomVerse = useCallback(async (selectedTestament: "OT" | "NT") => {
     setLoading(true);
-
     try {
       const url =
         selectedTestament === "OT"
@@ -33,14 +32,14 @@ const Bible = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log(data);
       setData(data.random_verse);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
   const { readOut } = useEnglishTts();
 
   useEffect(() => {
@@ -55,15 +54,16 @@ const Bible = () => {
   }, []);
 
   useEffect(() => {
-    getRandomVerse(testament);
-  }, [testament]);
+    (async () => {
+      await getRandomVerse(testament);
+    })();
+  }, [testament, getRandomVerse]);
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (!navigator.clipboard || !window.ClipboardItem) {
       alert("This browser does not support image copying to clipboard.");
       return;
     }
-
     if (!cardRef.current) return;
     const canvas = await html2canvas(cardRef.current, { scale: 2 });
 
@@ -76,14 +76,14 @@ const Bible = () => {
         const item = new ClipboardItem({ "image/png": blob });
         await navigator.clipboard.write([item]);
         alert(
-          "✅ Image copied to clipboard!\nTry pasting it into KakaoTalk or any messenger using Ctrl+V.",
+          "✅ Image copied to clipboard!\nTry pasting it into any messenger using Ctrl+V.",
         );
       } catch (err) {
         alert("❌ Failed to copy image to clipboard.");
         console.error(err);
       }
     });
-  };
+  }, []);
 
   return (
     <div className={styles.bibleContainer}>
@@ -115,7 +115,12 @@ const Bible = () => {
           <ReadIcon />
         </button>
       </div>
-      <div className={styles.bibleCard} ref={cardRef}>
+      <div
+        className={styles.bibleCard}
+        ref={cardRef}
+        aria-live="polite"
+        aria-atomic="true"
+      >
         <div className={styles.cardHeader}>
           {loading ? (
             <h3>Loading...</h3>
