@@ -1,8 +1,9 @@
 import styles from "./Bible.module.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useEnglishTts } from "../service/tts.tsx";
-import { ShareIcon, ReadIcon } from "./icons";
+import { ShareIcon, ReadIcon } from "../util/icons.tsx";
 import html2canvas from "html2canvas";
+import AlertModal from "../util/AlertModal.tsx";
 
 interface RandomVerse {
   book: string;
@@ -12,13 +13,22 @@ interface RandomVerse {
   verse: number;
 }
 
+const testaments: Array<"OT" | "NT"> = ["OT", "NT"];
+
 const Bible = () => {
   const [data, setData] = useState<RandomVerse | null>(null);
   const [testament, setTestament] = useState<"OT" | "NT">("OT");
   const [loading, setLoading] = useState<boolean>(false);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [modalMessage, setModalMessage] = useState<string>("");
 
-  const testaments: Array<"OT" | "NT"> = ["OT", "NT"];
+  const { readOut } = useEnglishTts();
   const cardRef = useRef<HTMLDivElement | null>(null);
+
+  const showModal = useCallback((message: string) => {
+    setModalMessage(message);
+    setModalOpen(true);
+  }, []);
 
   const getRandomVerse = useCallback(async (selectedTestament: "OT" | "NT") => {
     setLoading(true);
@@ -29,7 +39,8 @@ const Bible = () => {
           : "https://bible-api.com/data/web/random/NT";
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error(`HTTP error! status: ${response.status}`);
+        return;
       }
       const data = await response.json();
       setData(data.random_verse);
@@ -39,8 +50,6 @@ const Bible = () => {
       setLoading(false);
     }
   }, []);
-
-  const { readOut } = useEnglishTts();
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -61,7 +70,7 @@ const Bible = () => {
 
   const handleShare = useCallback(async () => {
     if (!navigator.clipboard || !window.ClipboardItem) {
-      alert("This browser does not support image copying to clipboard.");
+      showModal("This browser does not support image copying to clipboard.");
       return;
     }
     if (!cardRef.current) return;
@@ -69,24 +78,30 @@ const Bible = () => {
 
     canvas.toBlob(async (blob) => {
       if (!blob) {
-        alert("❌ Failed to generate image blob.");
+        showModal("Failed to generate image.");
         return;
       }
       try {
         const item = new ClipboardItem({ "image/png": blob });
         await navigator.clipboard.write([item]);
-        alert(
-          "✅ Image copied to clipboard!\nTry pasting it into any messenger using Ctrl+V.",
+        showModal(
+          "Image copied to clipboard.\nTry pasting it into any messenger.",
         );
       } catch (err) {
-        alert("❌ Failed to copy image to clipboard.");
+        showModal("Failed to copy image to clipboard.");
         console.error(err);
       }
     });
-  }, []);
+  }, [showModal]);
 
   return (
     <div className={styles.bibleContainer}>
+      {modalOpen && (
+        <AlertModal
+          message={modalMessage}
+          onConfirm={() => setModalOpen(false)}
+        />
+      )}
       <div className={styles.bibleSelector}>
         {testaments.map((t) => (
           <button
